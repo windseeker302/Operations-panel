@@ -1,7 +1,12 @@
 import csv
+import base64
+import hashlib
+import hmac
 import json
 import os
+import secrets
 import sqlite3
+import time
 from datetime import datetime
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -30,6 +35,12 @@ DEFAULT_CLOUD_JUMP_PASSWORD = "Pass@2026!!11"
 SECRET_PREFIX = "enc:v1:"
 SECRET_KEY_PATH = Path(os.environ.get("APP_SECRET_KEY_FILE", RUNTIME_DIR / "app-secret.key")).resolve()
 _SECRET_BOX: Fernet | None = None
+AUTH_ENABLED = os.environ.get("APP_AUTH_ENABLED", "1") != "0"
+AUTH_USERNAME = os.environ.get("APP_AUTH_USERNAME", "admin")
+AUTH_PASSWORD = os.environ.get("APP_AUTH_PASSWORD", "admin123456")
+SESSION_COOKIE_NAME = "ops_panel_session"
+SESSION_MAX_AGE = int(os.environ.get("APP_SESSION_MAX_AGE", "43200"))
+CLOUD_CARD_PASSWORD_LABEL = "密码"
 CLOUD_ACCOUNT_LABELS = {
     "HLW_danganguan_admin": "互联网榆林市档案馆",
     "HLW_dashuju_admin": "互联网大数据公司业务系统",
@@ -139,6 +150,49 @@ def get_secret_box() -> Fernet:
     except ValueError as exc:
         raise RuntimeError("APP_SECRET_KEY 不合法，必须使用 Fernet 密钥") from exc
     return _SECRET_BOX
+
+
+def get_session_secret() -> bytes:
+    raw = os.environ.get("APP_SESSION_SECRET", "").strip()
+    if raw:
+        return raw.encode("utf-8")
+    env_secret = os.environ.get("APP_SECRET_KEY", "").strip()
+    if env_secret:
+        return env_secret.encode("utf-8")
+    if SECRET_KEY_PATH.exists():
+        return SECRET_KEY_PATH.read_text(encoding="utf-8").strip().encode("utf-8")
+    return secrets.token_hex(32).encode("utf-8")
+
+
+def sign_session_payload(payload: str) -> str:
+    return hmac.new(get_session_secret(), payload.encode("utf-8"), hashlib.sha256).hexdigest()
+
+
+def build_session_token(username: str) -> str:
+    expires_at = int(time.time()) + SESSION_MAX_AGE
+    payload = f"{username}|{expires_at}"
+    signature = sign_session_payload(payload)
+    raw = f"{payload}|{signature}".encode("utf-8")
+    return base64.urlsafe_b64encode(raw).decode("utf-8")
+
+
+def read_session_token(token: str) -> str | None:
+    if not token:
+        return None
+    try:
+        raw = base64.urlsafe_b64decode(token.encode("utf-8")).decode("utf-8")
+        username, expires_at, signature = raw.split("|", 2)
+    except Exception:
+        return None
+    payload = f"{username}|{expires_at}"
+    if not hmac.compare_digest(signature, sign_session_payload(payload)):
+        return None
+    try:
+        if int(expires_at) < int(time.time()):
+            return None
+    except ValueError:
+        return None
+    return username
 
 
 def is_secret_encrypted(value: str) -> bool:
@@ -519,6 +573,24 @@ def normalize_cloud_payload(payload: dict) -> dict:
     }
 
 
+def merge_device_update_payload(existing_row: sqlite3.Row, payload: dict) -> dict:
+    merged = dict(payload)
+    plain = str(payload.get("password", "")).strip()
+    cipher = str(payload.get("passwordCiphertext", "")).strip()
+    if not plain and not cipher:
+        merged["passwordCiphertext"] = existing_row["password"] or ""
+    return normalize_device_payload(merged)
+
+
+def merge_cloud_update_payload(existing_row: sqlite3.Row, payload: dict) -> dict:
+    merged = dict(payload)
+    plain = str(payload.get("jumpPassword", "")).strip()
+    cipher = str(payload.get("jumpPasswordCiphertext", "")).strip()
+    if not plain and not cipher:
+        merged["jumpPasswordCiphertext"] = existing_row["jump_password"] or ""
+    return normalize_cloud_payload(merged)
+
+
 class AppHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(STATIC_DIR), **kwargs)
@@ -527,11 +599,52 @@ class AppHandler(SimpleHTTPRequestHandler):
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         print(f"[{timestamp}] {self.address_string()} {format % args}")
 
+    def parse_cookies(self) -> dict[str, str]:
+        raw = self.headers.get("Cookie", "")
+        cookies: dict[str, str] = {}
+        for segment in raw.split(";"):
+            if "=" not in segment:
+                continue
+            key, value = segment.split("=", 1)
+            cookies[key.strip()] = value.strip()
+        return cookies
+
+    def current_user(self) -> str | None:
+        if not AUTH_ENABLED:
+            return AUTH_USERNAME
+        token = self.parse_cookies().get(SESSION_COOKIE_NAME, "")
+        return read_session_token(token)
+
+    def is_public_api(self, path: str) -> bool:
+        return path in {"/api/healthz", "/api/auth/session", "/api/auth/login"}
+
+    def require_api_auth(self, path: str) -> bool:
+        if self.is_public_api(path):
+            return False
+        return AUTH_ENABLED
+
+    def ensure_api_auth(self, path: str) -> bool:
+        if not self.require_api_auth(path):
+            return True
+        if self.current_user():
+            return True
+        self.send_api_error("未登录", status=401)
+        return False
+
+    def build_session_cookie_header(self, username: str) -> str:
+        token = build_session_token(username)
+        return (
+            f"{SESSION_COOKIE_NAME}={token}; Path=/; HttpOnly; SameSite=Lax; Max-Age={SESSION_MAX_AGE}"
+        )
+
+    def build_logout_cookie_header(self) -> str:
+        return f"{SESSION_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0"
+
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
         if parsed.path == "/":
             self.send_response(HTTPStatus.FOUND)
-            self.send_header("Location", "/drives")
+            self.send_header("Location", "/drives" if self.current_user() else "/login")
             self.end_headers()
             return
 
@@ -539,7 +652,22 @@ class AppHandler(SimpleHTTPRequestHandler):
             self.handle_api_get()
             return
 
+        if parsed.path == "/login":
+            if self.current_user():
+                self.send_response(HTTPStatus.FOUND)
+                self.send_header("Location", "/drives")
+                self.end_headers()
+                return
+            self.path = "/index.html"
+            super().do_GET()
+            return
+
         if parsed.path in {"/drives", "/cloud"}:
+            if AUTH_ENABLED and not self.current_user():
+                self.send_response(HTTPStatus.FOUND)
+                self.send_header("Location", "/login")
+                self.end_headers()
+                return
             self.path = "/index.html"
 
         super().do_GET()
@@ -564,7 +692,7 @@ class AppHandler(SimpleHTTPRequestHandler):
 
     def translate_path(self, path: str) -> str:
         clean_path = urlparse(path).path
-        if clean_path in {"/drives", "/cloud"}:
+        if clean_path in {"/login", "/drives", "/cloud"}:
             return str(STATIC_DIR / "index.html")
 
         target = (STATIC_DIR / clean_path.lstrip("/")).resolve()
@@ -606,6 +734,12 @@ class AppHandler(SimpleHTTPRequestHandler):
         parsed = urlparse(self.path)
         if parsed.path == "/api/healthz":
             self.send_json({"status": "ok", "time": now_iso()})
+            return
+        if parsed.path == "/api/auth/session":
+            user = self.current_user()
+            self.send_json({"authenticated": bool(user), "username": user or ""})
+            return
+        if not self.ensure_api_auth(parsed.path):
             return
 
         with get_connection() as conn:
@@ -658,6 +792,22 @@ class AppHandler(SimpleHTTPRequestHandler):
     def handle_api_post(self) -> None:
         parsed = urlparse(self.path)
         body = self.parse_json_body()
+        if parsed.path == "/api/auth/login":
+            username = str(body.get("username", "")).strip()
+            password = str(body.get("password", "")).strip()
+            if username != AUTH_USERNAME or password != AUTH_PASSWORD:
+                self.send_api_error("账号或密码错误", status=401)
+                return
+            self.send_json(
+                {"authenticated": True, "username": username},
+                headers={"Set-Cookie": self.build_session_cookie_header(username)},
+            )
+            return
+        if parsed.path == "/api/auth/logout":
+            self.send_json({}, headers={"Set-Cookie": self.build_logout_cookie_header()})
+            return
+        if not self.ensure_api_auth(parsed.path):
+            return
         with get_connection() as conn:
             if parsed.path.startswith("/api/devices/") and parsed.path.endswith("/pin"):
                 device_id = parse_nested_id_from_path(parsed.path, "/api/devices/")
@@ -773,10 +923,16 @@ class AppHandler(SimpleHTTPRequestHandler):
     def handle_api_put(self) -> None:
         parsed = urlparse(self.path)
         body = self.parse_json_body()
+        if not self.ensure_api_auth(parsed.path):
+            return
         with get_connection() as conn:
             if parsed.path.startswith("/api/devices/"):
                 device_id = parse_id_from_path(parsed.path, "/api/devices/")
-                item = normalize_device_payload(body)
+                existing_row = get_device_row(conn, device_id)
+                if not existing_row:
+                    self.send_api_error("设备不存在", status=404)
+                    return
+                item = merge_device_update_payload(existing_row, body)
                 cursor = conn.execute(
                     """
                     UPDATE devices
@@ -794,16 +950,17 @@ class AppHandler(SimpleHTTPRequestHandler):
                         device_id,
                     ),
                 )
-                if cursor.rowcount == 0:
-                    self.send_api_error("设备不存在", status=404)
-                    return
                 row = conn.execute("SELECT * FROM devices WHERE id = ?", (device_id,)).fetchone()
                 self.send_json(device_row_to_dict(row))
                 return
 
             if parsed.path.startswith("/api/cloud-logins/"):
                 cloud_id = parse_id_from_path(parsed.path, "/api/cloud-logins/")
-                item = normalize_cloud_payload(body)
+                existing_row = get_cloud_row(conn, cloud_id)
+                if not existing_row:
+                    self.send_api_error("租户记录不存在", status=404)
+                    return
+                item = merge_cloud_update_payload(existing_row, body)
                 cursor = conn.execute(
                     """
                     UPDATE cloud_logins
@@ -822,9 +979,6 @@ class AppHandler(SimpleHTTPRequestHandler):
                         cloud_id,
                     ),
                 )
-                if cursor.rowcount == 0:
-                    self.send_api_error("租户记录不存在", status=404)
-                    return
                 row = conn.execute("SELECT * FROM cloud_logins WHERE id = ?", (cloud_id,)).fetchone()
                 self.send_json(cloud_row_to_dict(row))
                 return
@@ -833,6 +987,8 @@ class AppHandler(SimpleHTTPRequestHandler):
 
     def handle_api_delete(self) -> None:
         parsed = urlparse(self.path)
+        if not self.ensure_api_auth(parsed.path):
+            return
         with get_connection() as conn:
             if parsed.path.startswith("/api/devices/"):
                 device_id = parse_id_from_path(parsed.path, "/api/devices/")

@@ -42,6 +42,7 @@ import {
   KeyRound,
   LayoutGrid,
   List,
+  LogOut,
   Moon,
   Pencil,
   Pin,
@@ -103,6 +104,7 @@ const CARD_CLASS =
   "overflow-hidden rounded-3xl border border-slate-200 bg-white text-slate-800 shadow-sm transition-[background-color,border-color,box-shadow,color] duration-300 ease-out dark:border-white/5 dark:bg-neutral-900 dark:text-zinc-100 dark:shadow-[0_18px_40px_rgba(0,0,0,0.22)]";
 
 function getTabFromPathname(pathname) {
+  if (pathname === "/login") return "login";
   if (pathname === "/cloud") return "cloud";
   return "devices";
 }
@@ -128,6 +130,10 @@ function App() {
     cloudLogins: [],
     settings: { cloudLoginUrl: "" },
   });
+  const [authReady, setAuthReady] = useState(false);
+  const [authenticated, setAuthenticated] = useState(false);
+  const [loginPending, setLoginPending] = useState(false);
+  const [loginForm, setLoginForm] = useState({ username: "", password: "" });
   const [deviceStatus, setDeviceStatus] = useState({});
   const [toast, setToast] = useState("");
   const [loading, setLoading] = useState(false);
@@ -140,7 +146,7 @@ function App() {
   const [cloudLoginUrlInput, setCloudLoginUrlInput] = useState(CLOUD_URL_FALLBACK);
 
   useEffect(() => {
-    loadData();
+    checkSession();
   }, []);
 
   useEffect(() => {
@@ -165,6 +171,12 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (tab === "login") {
+      if (window.location.pathname !== "/login") {
+        window.history.replaceState({}, "", "/login");
+      }
+      return;
+    }
     const targetPath = TAB_ROUTE_MAP[tab] || TAB_ROUTE_MAP.devices;
     if (window.location.pathname !== targetPath) {
       window.history.replaceState({}, "", targetPath);
@@ -174,6 +186,23 @@ function App() {
   useEffect(() => {
     setCloudLoginUrlInput(boot.settings.cloudLoginUrl || CLOUD_URL_FALLBACK);
   }, [boot.settings.cloudLoginUrl]);
+
+  useEffect(() => {
+    if (!authReady) return;
+    if (!authenticated) {
+      if (tab !== "login") {
+        window.history.replaceState({}, "", "/login");
+        setTab("login");
+      }
+      return;
+    }
+    if (tab === "login") {
+      window.history.replaceState({}, "", "/drives");
+      setTab("devices");
+      return;
+    }
+    loadData();
+  }, [authReady, authenticated, tab]);
 
   async function api(path, options = {}) {
     const response = await fetch(path, {
@@ -188,6 +217,17 @@ function App() {
     return data;
   }
 
+  async function checkSession() {
+    try {
+      const data = await api("/api/auth/session");
+      setAuthenticated(Boolean(data.authenticated));
+    } catch {
+      setAuthenticated(false);
+    } finally {
+      setAuthReady(true);
+    }
+  }
+
   async function loadData(showMessage = false) {
     try {
       setLoading(true);
@@ -196,6 +236,12 @@ function App() {
       setDeviceStatus({});
       if (showMessage) showToast("数据已刷新");
     } catch (error) {
+      if (error.message === "未登录") {
+        setAuthenticated(false);
+        window.history.replaceState({}, "", "/login");
+        setTab("login");
+        return;
+      }
       showToast(error.message);
     } finally {
       setLoading(false);
@@ -332,6 +378,39 @@ function App() {
     setTab(nextTab);
   }
 
+  async function submitLogin(event) {
+    event.preventDefault();
+    try {
+      setLoginPending(true);
+      await api("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify(loginForm),
+      });
+      setAuthenticated(true);
+      window.history.replaceState({}, "", "/drives");
+      setTab("devices");
+      showToast("登录成功");
+    } catch (error) {
+      showToast(error.message);
+    } finally {
+      setLoginPending(false);
+    }
+  }
+
+  async function logout() {
+    try {
+      await api("/api/auth/logout", { method: "POST" });
+    } catch {
+      // 忽略退出接口异常，前端仍然主动回到登录页
+    }
+    setAuthenticated(false);
+    setBoot({ devices: [], cloudLogins: [], settings: { cloudLoginUrl: "" } });
+    setDeviceStatus({});
+    setLoginForm({ username: "", password: "" });
+    window.history.replaceState({}, "", "/login");
+    setTab("login");
+  }
+
   async function fetchDeviceSecret(deviceId) {
     return api(`/api/devices/${deviceId}/secret`);
   }
@@ -428,44 +507,34 @@ function App() {
     setDialogOpen(true);
   }
 
-  async function openEditDevice(device) {
-    try {
-      const secret = await fetchDeviceSecret(device.id);
-      setDialogType("device");
-      setDialogMode("edit");
-      setEditingId(device.id);
-      setDeviceForm({
-        name: device.name,
-        url: device.url,
-        username: secret.username || device.username || "",
-        password: secret.password || "",
-        category: device.category,
-        isPinned: Boolean(device.isPinned),
-      });
-      setDialogOpen(true);
-    } catch (error) {
-      showToast(error.message);
-    }
+  function openEditDevice(device) {
+    setDialogType("device");
+    setDialogMode("edit");
+    setEditingId(device.id);
+    setDeviceForm({
+      name: device.name,
+      url: device.url,
+      username: device.username || "",
+      password: "",
+      category: device.category,
+      isPinned: Boolean(device.isPinned),
+    });
+    setDialogOpen(true);
   }
 
-  async function openEditCloud(item) {
-    try {
-      const secret = await fetchCloudSecret(item.id);
-      setDialogType("cloud");
-      setDialogMode("edit");
-      setEditingId(item.id);
-      setCloudForm({
-        tenantName: item.tenantName || "",
-        tenantCode: item.tenantCode || "",
-        platformAccount: secret.platformAccount || item.platformAccount || "",
-        jumpPassword: secret.jumpPassword || "",
-        isPinned: Boolean(item.isPinned),
-        notes: item.notes || "",
-      });
-      setDialogOpen(true);
-    } catch (error) {
-      showToast(error.message);
-    }
+  function openEditCloud(item) {
+    setDialogType("cloud");
+    setDialogMode("edit");
+    setEditingId(item.id);
+    setCloudForm({
+      tenantName: item.tenantName || "",
+      tenantCode: item.tenantCode || "",
+      platformAccount: item.platformAccount || "",
+      jumpPassword: "",
+      isPinned: Boolean(item.isPinned),
+      notes: item.notes || "",
+    });
+    setDialogOpen(true);
   }
 
   async function submitDeviceForm(event) {
@@ -650,6 +719,82 @@ function App() {
   const deviceOnlineCount = filteredDevices.filter((item) => deviceStatus[item.id] === "online").length;
   const currentRouteLabel = tab === "devices" ? "设备页" : "云平台页";
 
+  if (!authReady) {
+    return (
+      <div className="min-h-screen bg-app text-slate-800 dark:text-zinc-100">
+        <div className="mx-auto flex min-h-screen max-w-[1820px] items-center justify-center p-6">
+          <div className={`${SURFACE_CLASS} w-full max-w-md p-8 text-center`}>
+            <div className="text-sm uppercase tracking-[0.24em] text-slate-500 dark:text-zinc-500">Loading</div>
+            <div className="mt-4 text-2xl font-semibold text-slate-800 dark:text-white">正在检查登录状态</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (tab === "login") {
+    return (
+      <div className="min-h-screen bg-app text-slate-800 dark:text-zinc-100">
+        <div className="mx-auto flex min-h-screen max-w-[1820px] items-center justify-center p-6">
+          <div className="grid w-full max-w-5xl gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+            <section className={`${SURFACE_CLASS} overflow-hidden p-8 lg:p-10`}>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500 dark:text-zinc-500">
+                Operations Panel
+              </div>
+              <h1 className="mt-4 text-4xl font-semibold tracking-tight text-slate-800 dark:text-white">登录面板</h1>
+              <p className="mt-4 max-w-xl text-sm leading-7 text-slate-500 dark:text-zinc-400">
+                登录后才能访问设备页、云平台页以及对应的受控取密接口。
+              </p>
+              <div className="mt-8 grid gap-4 sm:grid-cols-2">
+                <TopMetricCard title="设备页" value="受保护" desc="登录后查看设备账号与打开入口" />
+                <TopMetricCard title="云平台页" value="受保护" desc="登录后查看租户记录与密码填充" accent />
+              </div>
+            </section>
+
+            <section className={`${SURFACE_CLASS} p-8 lg:p-10`}>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500 dark:text-zinc-500">
+                Sign In
+              </div>
+              <div className="mt-4 text-2xl font-semibold text-slate-800 dark:text-white">账号登录</div>
+              <form className="mt-8 grid gap-4" onSubmit={submitLogin}>
+                <div className="grid gap-2">
+                  <Label htmlFor="login-username">账号</Label>
+                  <Input
+                    id="login-username"
+                    value={loginForm.username}
+                    onChange={(event) => setLoginForm((prev) => ({ ...prev, username: event.target.value }))}
+                    className={FIELD_CLASS}
+                    autoComplete="username"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="login-password">密码</Label>
+                  <Input
+                    id="login-password"
+                    type="password"
+                    value={loginForm.password}
+                    onChange={(event) => setLoginForm((prev) => ({ ...prev, password: event.target.value }))}
+                    className={FIELD_CLASS}
+                    autoComplete="current-password"
+                  />
+                </div>
+                <Button type="submit" className={PRIMARY_BUTTON_CLASS} disabled={loginPending}>
+                  {loginPending ? "登录中..." : "登录"}
+                </Button>
+              </form>
+            </section>
+          </div>
+        </div>
+
+        {toast ? (
+          <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 shadow-md dark:border-white/10 dark:bg-neutral-900/95 dark:text-white dark:shadow-[0_10px_30px_rgba(0,0,0,0.45)]">
+            {toast}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <div data-panel-app="firewall-login-manager" className="min-h-screen bg-app text-slate-800 dark:text-zinc-100">
       <div className="mx-auto flex max-w-[1820px] flex-col gap-5 p-4 lg:flex-row lg:p-6">
@@ -749,6 +894,10 @@ function App() {
                 <Button variant="outline" className={ACTION_BUTTON_CLASS} onClick={exportData}>
                   <Download className="size-4" />
                   导出
+                </Button>
+                <Button variant="outline" className={ACTION_BUTTON_CLASS} onClick={logout}>
+                  <LogOut className="size-4" />
+                  退出
                 </Button>
                 <label className="inline-flex">
                   <input type="file" className="hidden" accept=".json" onChange={importData} />
@@ -1024,7 +1173,7 @@ function App() {
             <DialogDescription>
               {dialogType === "device"
                 ? "设备数据会直接写入数据库，用于统一维护登录地址和账号密码。"
-                : "租户记录用于统一维护平台账号与跳板机密码。"}
+                : "租户记录用于统一维护平台账号与登录密码。"}
             </DialogDescription>
           </DialogHeader>
 
@@ -1095,8 +1244,10 @@ function App() {
                   <Label htmlFor="device-password">密码</Label>
                   <Input
                     id="device-password"
+                    type="password"
                     value={deviceForm.password}
                     onChange={(event) => setDeviceForm((prev) => ({ ...prev, password: event.target.value }))}
+                    placeholder={dialogMode === "edit" ? "留空则保持原密码" : ""}
                     className={FIELD_CLASS}
                   />
                 </div>
@@ -1143,11 +1294,13 @@ function App() {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="jump-password">统一密码</Label>
+                  <Label htmlFor="jump-password">密码</Label>
                   <Input
                     id="jump-password"
+                    type="password"
                     value={cloudForm.jumpPassword}
                     onChange={(event) => setCloudForm((prev) => ({ ...prev, jumpPassword: event.target.value }))}
+                    placeholder={dialogMode === "edit" ? "留空则保持原密码" : ""}
                     className={FIELD_CLASS}
                   />
                 </div>
@@ -1443,7 +1596,7 @@ function CloudCard({ item, cloudLoginUrl, onCopy, onEdit, onDelete, onPin, onOpe
         <div className="flex items-start justify-between gap-3">
           <div>
             <CardTitle className="text-xl text-slate-800 dark:text-white">{displayTitle}</CardTitle>
-            <CardDescription className="mt-2">云平台租户与统一密码</CardDescription>
+            <CardDescription className="mt-2">云平台租户与登录密码</CardDescription>
           </div>
           <StatusBadge variant="online">可用</StatusBadge>
         </div>
@@ -1457,7 +1610,7 @@ function CloudCard({ item, cloudLoginUrl, onCopy, onEdit, onDelete, onPin, onOpe
       <CardContent className="space-y-4 p-6">
         <InfoBlock label="租户ID" value={item.tenantCode || "-"} onCopy={() => onCopy(item.tenantCode)} />
         <InfoBlock label="平台账号" value={item.platformAccount || "-"} onCopy={() => onCopy(item.platformAccount)} />
-        <InfoBlock label="统一密码" value="受控访问" />
+        <InfoBlock label="密码" value="受控访问" />
         <InfoBlock label="中文注释" value={item.notes || "-"} onCopy={() => onCopy(item.notes)} />
 
         <div className="flex flex-wrap gap-2">
