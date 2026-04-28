@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "运维中心自动登录助手",
+  "version": "1.1",
+  "description": "专为内网防火墙与云平台租户入口提供账号密码自动填充功能。",
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

@@ -1,0 +1,108 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-app-bg: #f8fafc;
+}
+
+:root {
+  color-scheme: light;
+  font-family: "Segoe UI Variable", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: #f8fafc;
+  --theme-toggle-x: 50vw;
+  --theme-toggle-y: 24px;
+  --theme-toggle-radius: 0px;
+}
+
+.dark:root {
+  color-scheme: dark;
+  background: #0f0f12;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  transition:
+    background 320ms ease-out,
+    color 220ms ease-out;
+  background:
+    radial-gradient(circle at top left, rgba(99, 102, 241, 0.06), transparent 24%),
+    radial-gradient(circle at bottom right, rgba(56, 189, 248, 0.04), transparent 22%),
+    linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  color: #1e293b;
+}
+
+.dark body {
+  background:
+    radial-gradient(circle at top left, rgba(139, 92, 246, 0.14), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(34, 211, 238, 0.08), transparent 24%),
+    linear-gradient(180deg, #0f0f12 0%, #09090b 100%);
+  color: #f4f4f5;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.bg-app {
+  transition: background 320ms ease-out;
+  background:
+    radial-gradient(circle at top left, rgba(99, 102, 241, 0.05), transparent 22%),
+    radial-gradient(circle at bottom right, rgba(56, 189, 248, 0.04), transparent 20%),
+    linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.dark .bg-app {
+  background:
+    radial-gradient(circle at top left, rgba(139, 92, 246, 0.12), transparent 26%),
+    radial-gradient(circle at bottom right, rgba(34, 211, 238, 0.08), transparent 22%),
+    linear-gradient(180deg, #0f0f12 0%, #09090b 100%);
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+.theme-transition-active::view-transition-new(root) {
+  animation: theme-reveal 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.theme-transition-active::view-transition-old(root) {
+  animation: theme-fade-out 280ms ease-out;
+}
+
+@keyframes theme-reveal {
+  from {
+    clip-path: circle(0 at var(--theme-toggle-x) var(--theme-toggle-y));
+    opacity: 0.72;
+    filter: saturate(1.08) brightness(1.04);
+  }
+  to {
+    clip-path: circle(var(--theme-toggle-radius) at var(--theme-toggle-x) var(--theme-toggle-y));
+    opacity: 1;
+    filter: saturate(1) brightness(1);
+  }
+}
+
+@keyframes theme-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.82;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body,
+  .bg-app {
+    transition: none;
+  }
+
+  .theme-transition-active::view-transition-old(root),
+  .theme-transition-active::view-transition-new(root) {
+    animation: none;
+  }
+}

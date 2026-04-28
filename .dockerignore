@@ -1,0 +1,5 @@
+node_modules/
+.npm-cache/
+runtime/
+__pycache__/
+frontend/node_modules/

@@ -1,0 +1,23 @@
+version: "3.8"
+
+services:
+  firewall-panel:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: firewall-panel
+    ports:
+      - "8081:8080"
+    environment:
+      APP_HOST: 0.0.0.0
+      APP_PORT: 8080
+      APP_RUNTIME_DIR: /app/runtime
+      APP_DB_PATH: /app/runtime/firewall-login-manager.db
+      APP_STATIC_DIR: /app/html
+      APP_SEED_FILE: /app/seed/default_devices.json
+      APP_CLOUD_SEED_FILE: /app/user_info_export_20260428_142420.csv
+      APP_SECRET_KEY: ${APP_SECRET_KEY:-}
+      APP_SECRET_KEY_FILE: /app/runtime/app-secret.key
+    volumes:
+      - /opt/firewall-login-manager/runtime:/app/runtime
+    restart: unless-stopped

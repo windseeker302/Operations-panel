@@ -1,0 +1,852 @@
+[
+  {
+    "id": 1001,
+    "name": "华三堡垒机",
+    "url": "https://10.127.5.4/index.php/om",
+    "username": "shiyanhong",
+    "password": "abcd1234",
+    "category": "Toolbox",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1002,
+    "name": "北塔运维平台",
+    "url": "http://10.127.176.5/portal/home/run_state_monitor/index",
+    "username": "shiyanhong",
+    "password": "shiyanhong@123",
+    "category": "Toolbox",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1003,
+    "name": "网络组",
+    "url": "http://10.127.94.30:8080/apps/files/files/4105?dir=/%E7%BD%91%E7%BB%9C%E7%BB%84",
+    "username": "nextcloud",
+    "password": "Qwer_2f_9430",
+    "category": "Toolbox",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1004,
+    "name": "不动产科创大厅",
+    "url": "https://10.126.7.162/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1005,
+    "name": "传媒中心（新闻大厦东侧2楼）",
+    "url": "https://10.126.7.150/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1006,
+    "name": "榆林市档案局",
+    "url": "https://10.126.7.218/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1007,
+    "name": "榆林市第三医院",
+    "url": "https://10.126.7.222/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1008,
+    "name": "建设银行榆林分行",
+    "url": "https://10.126.7.142/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1009,
+    "name": "交通银行",
+    "url": "https://10.126.20.10/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1010,
+    "name": "榆林供热有限公司",
+    "url": "https://10.126.8.38/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1011,
+    "name": "榆林市残联（西部三辰）",
+    "url": "https://10.126.7.34/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1012,
+    "name": "榆林市畜牧局",
+    "url": "https://10.126.7.38/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1013,
+    "name": "榆林市创建中心",
+    "url": "https://10.126.8.226/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1014,
+    "name": "榆林市公安局",
+    "url": "https://10.126.7.230/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1015,
+    "name": "榆林市公路管理局",
+    "url": "https://10.126.7.66/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1016,
+    "name": "榆林市国动办（人防办）",
+    "url": "https://10.126.7.74/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1017,
+    "name": "榆林市国税局",
+    "url": "https://10.126.7.146/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1018,
+    "name": "榆林市机关事务服务中心",
+    "url": "https://10.126.7.54/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1019,
+    "name": "榆林市疾病预防控制中心",
+    "url": "https://10.126.7.42/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1020,
+    "name": "榆林市计量局",
+    "url": "https://10.126.7.106/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1021,
+    "name": "榆林市纪检委",
+    "url": "https://10.126.7.86/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1022,
+    "name": "榆林市检察院",
+    "url": "https://10.126.7.90/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1023,
+    "name": "榆林市教育局",
+    "url": "https://10.126.7.102/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1024,
+    "name": "榆林市科技局",
+    "url": "https://10.126.7.198/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1025,
+    "name": "榆林市矿业集团",
+    "url": "https://10.126.7.138/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1026,
+    "name": "榆林市粮食和物资储备服务中心",
+    "url": "https://10.126.7.110/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1027,
+    "name": "榆林市民政局",
+    "url": "https://10.126.7.118/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1028,
+    "name": "榆林市农业机械服务中心",
+    "url": "https://10.126.7.122/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1029,
+    "name": "榆林市农业农村局",
+    "url": "https://10.126.7.126/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1030,
+    "name": "榆林市气象局",
+    "url": "https://10.126.7.70/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1031,
+    "name": "榆林市人社局",
+    "url": "https://10.126.7.158/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1032,
+    "name": "榆林市人行",
+    "url": "https://10.126.7.134/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1033,
+    "name": "榆林市审计局",
+    "url": "https://10.126.7.82/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1034,
+    "name": "榆林市生态环保局",
+    "url": "https://10.126.7.206/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1035,
+    "name": "榆林市市场监督管理局",
+    "url": "https://10.126.7.246/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1036,
+    "name": "榆林市市委党校城投物业",
+    "url": "https://10.126.7.242/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1037,
+    "name": "榆林市市文联",
+    "url": "https://10.126.7.170/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1038,
+    "name": "榆林市水利局",
+    "url": "https://10.126.7.166/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1039,
+    "name": "榆林市水务集团",
+    "url": "https://10.126.7.174/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1040,
+    "name": "榆林市司法局",
+    "url": "https://10.126.7.178/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1041,
+    "name": "榆林市体育局",
+    "url": "https://10.126.7.182/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1042,
+    "name": "榆林市铁路办",
+    "url": "https://10.126.7.254/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1043,
+    "name": "榆林市医保局",
+    "url": "https://10.126.7.58/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1044,
+    "name": "榆林市应急管理局",
+    "url": "https://10.126.7.202/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1045,
+    "name": "榆林市招商服务中心",
+    "url": "https://10.126.7.226/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1046,
+    "name": "榆林市职业技术学院",
+    "url": "https://10.126.8.2/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1047,
+    "name": "榆林市中心血站",
+    "url": "https://10.126.7.250/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1048,
+    "name": "榆林市住房保障中心",
+    "url": "https://10.126.7.210/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1049,
+    "name": "榆林市住建局",
+    "url": "https://10.126.20.14/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1050,
+    "name": "榆林市自然规划局",
+    "url": "https://10.126.7.214/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1051,
+    "name": "榆林市综合执法局",
+    "url": "https://10.126.20.2/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1052,
+    "name": "榆林榆川天燃气公司",
+    "url": "https://10.126.20.6/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1053,
+    "name": "榆林中燃天然气公司",
+    "url": "https://10.126.7.26/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1054,
+    "name": "榆林市财政局",
+    "url": "https://10.126.8.14/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1055,
+    "name": "榆林学院",
+    "url": "https://10.126.8.6/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1056,
+    "name": "榆林市消防救援支队",
+    "url": "https://10.126.8.10/framework.php",
+    "username": "admin",
+    "password": "yldzzw@ggw.1123",
+    "category": "Sangfor",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1057,
+    "name": "国家煤及盐化工产品质量监督检验中心",
+    "url": "https://10.126.8.222:8889",
+    "username": "administrator",
+    "password": "YLdzzw@7766",
+    "category": "Venustech",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1058,
+    "name": "陕西广电网络传媒（集团）",
+    "url": "https://10.126.8.154:8889",
+    "username": "administrator",
+    "password": "YLdzzw@7766",
+    "category": "Venustech",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1059,
+    "name": "陕西陕煤榆北煤业有限公司",
+    "url": "https://10.126.8.218:8889",
+    "username": "administrator",
+    "password": "YLdzzw@7766",
+    "category": "Venustech",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1060,
+    "name": "陕西省一八五煤田地质有限公司",
+    "url": "https://10.126.8.102:8889",
+    "username": "administrator",
+    "password": "YLdzzw@7766",
+    "category": "Venustech",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1061,
+    "name": "陕西省治沙研究所",
+    "url": "https://10.126.8.50:8889",
+    "username": "administrator",
+    "password": "YLdzzw@7766",
+    "category": "Venustech",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1062,
+    "name": "陕西榆林农村商业银行",
+    "url": "https://10.126.8.54:8889",
+    "username": "administrator",
+    "password": "YLdzzw@7766",
+    "category": "Venustech",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1063,
+    "name": "榆林城市管理执法局第二支队",
+    "url": "https://10.126.8.186:8889",
+    "username": "administrator",
+    "password": "YLdzzw@7766",
+    "category": "Venustech",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1064,
+    "name": "榆林军分区战备建设处（征兵办）",
+    "url": "https://10.126.8.62:8889",
+    "username": "administrator",
+    "password": "YLdzzw@7766",
+    "category": "Venustech",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1065,
+    "name": "榆林市第五医院",
+    "url": "https://10.126.20.34:8889",
+    "username": "administrator",
+    "password": "YLdzzw@7766",
+    "category": "Venustech",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1066,
+    "name": "榆林市妇幼保健院",
+    "url": "https://10.126.20.38:8889",
+    "username": "administrator",
+    "password": "YLdzzw@7766",
+    "category": "Venustech",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1067,
+    "name": "榆林市公园广场服务中心",
+    "url": "https://10.126.8.202:8889",
+    "username": "administrator",
+    "password": "YLdzzw@7766",
+    "category": "Venustech",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1068,
+    "name": "榆林市环境卫生服务中心",
+    "url": "https://10.126.8.198:8889",
+    "username": "administrator",
+    "password": "YLdzzw@7766",
+    "category": "Venustech",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1069,
+    "name": "榆林市社会保险基金管理中心",
+    "url": "https://10.126.8.178:8889",
+    "username": "administrator",
+    "password": "YLdzzw@7766",
+    "category": "Venustech",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1070,
+    "name": "榆林市急救指挥调度中心",
+    "url": "https://10.126.8.206:8889",
+    "username": "administrator",
+    "password": "YLdzzw@7766",
+    "category": "Venustech",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1071,
+    "name": "榆林市人事培训考试管理中心",
+    "url": "https://10.126.8.166:8889",
+    "username": "administrator",
+    "password": "YLdzzw@7766",
+    "category": "Venustech",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1072,
+    "name": "榆林市失业保险经办中心",
+    "url": "https://10.126.8.174:8889",
+    "username": "administrator",
+    "password": "YLdzzw@7766",
+    "category": "Venustech",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1073,
+    "name": "榆林市水土保持生态工程建设中心",
+    "url": "https://10.126.8.230:8889",
+    "username": "administrator",
+    "password": "YLdzzw@7766",
+    "category": "Venustech",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1074,
+    "name": "榆林市水文水资源勘测中心",
+    "url": "https://10.126.8.210:8889",
+    "username": "administrator",
+    "password": "YLdzzw@7766",
+    "category": "Venustech",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1075,
+    "name": "榆林市文旅局(三馆)",
+    "url": "https://10.126.8.234:8889",
+    "username": "administrator",
+    "password": "YLdzzw@7766",
+    "category": "Venustech",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1076,
+    "name": "榆林市烟草专卖局",
+    "url": "https://10.126.8.74:8889",
+    "username": "administrator",
+    "password": "YLdzzw@7766",
+    "category": "Venustech",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1077,
+    "name": "榆林市园林绿化服务中心",
+    "url": "https://10.126.8.190:8889",
+    "username": "administrator",
+    "password": "YLdzzw@7766",
+    "category": "Venustech",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1078,
+    "name": "榆林市中小企业融资担保有限责任公司",
+    "url": "https://10.126.8.86:8889",
+    "username": "administrator",
+    "password": "YLdzzw@7766",
+    "category": "Venustech",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1079,
+    "name": "榆林市中医医院",
+    "url": "https://10.126.20.30:8889",
+    "username": "administrator",
+    "password": "YLdzzw@7766",
+    "category": "Venustech",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1080,
+    "name": "长安银行股份有限公司榆林分行",
+    "url": "https://10.126.8.114:8889",
+    "username": "administrator",
+    "password": "YLdzzw@7766",
+    "category": "Venustech",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1081,
+    "name": "中国农业发展银行榆林分行",
+    "url": "https://10.126.8.138:8889",
+    "username": "administrator",
+    "password": "YLdzzw@7766",
+    "category": "Venustech",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1082,
+    "name": "中国农业银行股份有限公司榆林分行",
+    "url": "https://10.126.8.106:8889",
+    "username": "administrator",
+    "password": "YLdzzw@7766",
+    "category": "Venustech",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1083,
+    "name": "中国银行股份有限公司榆林分行",
+    "url": "https://10.126.8.110:8889",
+    "username": "administrator",
+    "password": "YLdzzw@7766",
+    "category": "Venustech",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1084,
+    "name": "中国邮政集团有限公司榆林市分公司",
+    "url": "https://10.126.8.214:8889",
+    "username": "administrator",
+    "password": "YLdzzw@7766",
+    "category": "Venustech",
+    "isPinned": false,
+    "testStatus": "idle"
+  },
+  {
+    "id": 1085,
+    "name": "中央储备粮榆林直属库有限公司",
+    "url": "https://10.126.8.98:8889",
+    "username": "administrator",
+    "password": "YLdzzw@7766",
+    "category": "Venustech",
+    "isPinned": false,
+    "testStatus": "idle"
+  }
+]

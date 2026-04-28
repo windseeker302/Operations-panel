@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>运维助手插件说明</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: "Segoe UI Variable", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        background: #0f0f12;
+        color: #f4f4f5;
+      }
+      body {
+        margin: 0;
+        background:
+          radial-gradient(circle at top left, rgba(139, 92, 246, 0.14), transparent 30%),
+          radial-gradient(circle at bottom right, rgba(34, 211, 238, 0.08), transparent 24%),
+          linear-gradient(180deg, #0f0f12 0%, #09090b 100%);
+      }
+      main {
+        max-width: 860px;
+        margin: 0 auto;
+        padding: 32px 20px 56px;
+      }
+      .panel {
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 24px;
+        padding: 24px;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.24);
+      }
+      h1,
+      h2,
+      p,
+      li {
+        margin: 0;
+      }
+      h1 {
+        font-size: 36px;
+        margin-bottom: 10px;
+      }
+      h2 {
+        font-size: 20px;
+        margin-bottom: 14px;
+      }
+      p,
+      li {
+        color: #a1a1aa;
+        line-height: 1.75;
+      }
+      ul,
+      ol {
+        margin: 0;
+        padding-left: 20px;
+      }
+      code,
+      a.code-link {
+        display: inline-block;
+        margin-top: 12px;
+        padding: 10px 12px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.06);
+        color: #f4f4f5;
+        text-decoration: none;
+        word-break: break-all;
+      }
+      .grid {
+        display: grid;
+        gap: 18px;
+        margin-top: 22px;
+      }
+      .links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 14px;
+      }
+      .links a {
+        text-decoration: none;
+        color: #e4e4e7;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 999px;
+        padding: 10px 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="panel">
+        <p style="font-size: 12px; letter-spacing: 0.24em; text-transform: uppercase; color: #71717a">Plugin Guide</p>
+        <h1>运维助手插件说明</h1>
+        <p>这个插件负责浏览器自动填充，设备页和云平台页都会依赖它。网站本身不保存浏览器自动填充能力，必须由 Chrome 扩展接管。</p>
+        <code>D:\ws\Vscode\firewall-login-manager\html\Yulin_Ops_AutoFill</code>
+        <div class="links">
+          <a href="/Yulin_Ops_AutoFill/manifest.json" target="_blank" rel="noreferrer">查看 manifest</a>
+          <a href="/Yulin_Ops_AutoFill/content.js" target="_blank" rel="noreferrer">查看 content.js</a>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="panel">
+          <h2>安装步骤</h2>
+          <ol>
+            <li>打开 Chrome，进入 <code>chrome://extensions/</code>。</li>
+            <li>打开右上角“开发者模式”。</li>
+            <li>点击“加载已解压的扩展程序”。</li>
+            <li>选择目录 <code>D:\ws\Vscode\firewall-login-manager\html\Yulin_Ops_AutoFill</code>。</li>
+          </ol>
+        </div>
+
+        <div class="panel">
+          <h2>当前支持</h2>
+          <ul>
+            <li>设备页：只能从面板点击“打开设备”后自动填充，不再在扩展里写死密码。</li>
+            <li>云平台页：从“打开平台”按钮接收租户上下文，自动填充租户 ID、平台账号、跳板账号、跳板密码。</li>
+            <li>统一入口：顶部全局“打开平台”会清空租户上下文，避免沿用上一个租户。</li>
+          </ul>
+        </div>
+
+        <div class="panel">
+          <h2>数据来源</h2>
+          <p>云平台卡片中的租户 ID、平台账号来自数据库；跳板账号和跳板密码也从数据库读取。当前 CSV 已导入为初始租户数据，后续可以在云平台页继续补充完整信息。</p>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

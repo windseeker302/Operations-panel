@@ -1,0 +1,6 @@
+runtime/
+__pycache__/
+*.pyc
+node_modules/
+.npm-cache/
+.playwright-mcp/
