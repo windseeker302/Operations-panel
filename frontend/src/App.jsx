@@ -734,7 +734,7 @@ function App() {
 
   if (tab === "login") {
     return (
-      <div className="min-h-screen bg-app text-slate-800 dark:text-zinc-100">
+      <div data-panel-app="firewall-login-manager" className="min-h-screen bg-app text-slate-800 dark:text-zinc-100">
         <div className="mx-auto flex min-h-screen max-w-[1820px] items-center justify-center p-6">
           <div className="grid w-full max-w-5xl gap-6 lg:grid-cols-[1.1fr_0.9fr]">
             <section className={`${SURFACE_CLASS} overflow-hidden p-8 lg:p-10`}>

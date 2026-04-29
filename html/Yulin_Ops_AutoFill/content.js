@@ -16,6 +16,8 @@ function isPanelPage() {
   return Boolean(document.querySelector('[data-panel-app="firewall-login-manager"]'));
 }
 
+let panelMessageListenerInstalled = false;
+
 function hasStorageApi() {
   return typeof chrome !== "undefined" && chrome.storage && chrome.storage.local;
 }
@@ -236,7 +238,10 @@ function buildPlanFromContext(context) {
   };
 }
 
-if (isPanelPage()) {
+function installPanelMessageListener() {
+  if (panelMessageListenerInstalled) return;
+  panelMessageListenerInstalled = true;
+
   window.addEventListener("message", (event) => {
     if (event.source !== window) return;
     const data = event.data;
@@ -277,6 +282,17 @@ if (isPanelPage()) {
         );
       });
   });
+}
+
+if (isPanelPage()) {
+  installPanelMessageListener();
+} else {
+  const observer = new MutationObserver(() => {
+    if (!isPanelPage()) return;
+    installPanelMessageListener();
+    observer.disconnect();
+  });
+  observer.observe(document.documentElement, { childList: true, subtree: true });
 }
 
 (async () => {
