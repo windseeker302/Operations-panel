@@ -83,10 +83,12 @@ const CLOUD_FORM_DEFAULT = {
 };
 
 const PLUGIN_GUIDE_URL = "/plugin-guide.html";
+const PLUGIN_ZIP_URL = "/Yulin_Ops_AutoFill.zip";
 const PLUGIN_MANIFEST_URL = "/Yulin_Ops_AutoFill/manifest.json";
 const PLUGIN_SCRIPT_URL = "/Yulin_Ops_AutoFill/content.js";
 const AUTOFILL_CONTEXT_MESSAGE_TYPE = "YL_OPS_AUTOFILL_CONTEXT";
 const AUTOFILL_CONTEXT_ACK_TYPE = "YL_OPS_AUTOFILL_CONTEXT_STORED";
+const AUTOFILL_RECOVERY_KEY = "panel_autofill_recovery";
 
 const THEME_STORAGE_KEY = "panel_theme";
 
@@ -102,6 +104,43 @@ const PRIMARY_BUTTON_CLASS =
   "h-11 rounded-2xl border-0 bg-gradient-to-r from-violet-500 via-indigo-500 to-cyan-400 text-white shadow-[0_12px_32px_rgba(99,102,241,0.35)] transition-[background-image,box-shadow,transform,filter] duration-300 ease-out hover:from-violet-400 hover:via-indigo-400 hover:to-cyan-300";
 const CARD_CLASS =
   "overflow-hidden rounded-3xl border border-slate-200 bg-white text-slate-800 shadow-sm transition-[background-color,border-color,box-shadow,color] duration-300 ease-out dark:border-white/5 dark:bg-neutral-900 dark:text-zinc-100 dark:shadow-[0_18px_40px_rgba(0,0,0,0.22)]";
+
+function normalizeAutofillErrorMessage(rawMessage) {
+  const message = String(rawMessage || "").trim();
+  if (!message) return "自动填充插件未响应，请确认插件已经启用。";
+  if (message.includes("Extension context invalidated")) {
+    return "自动填充插件刚刚被重载，当前管理页脚本已经失效。请先刷新当前页面，再重新点击打开。";
+  }
+  return message;
+}
+
+function isAutofillContextInvalidated(rawMessage) {
+  const message = String(rawMessage || "").trim();
+  return message.includes("Extension context invalidated") || message.includes("褰撳墠绠＄悊椤佃剼鏈凡缁忓け鏁?");
+}
+
+function saveAutofillRecoveryTask(task) {
+  sessionStorage.setItem(AUTOFILL_RECOVERY_KEY, JSON.stringify(task));
+}
+
+function readAutofillRecoveryTask() {
+  const raw = sessionStorage.getItem(AUTOFILL_RECOVERY_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    sessionStorage.removeItem(AUTOFILL_RECOVERY_KEY);
+    return null;
+  }
+}
+
+function clearAutofillRecoveryTask() {
+  sessionStorage.removeItem(AUTOFILL_RECOVERY_KEY);
+}
+
+function createAutofillToken() {
+  return `yl_ops_autofill_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+}
 
 function getTabFromPathname(pathname) {
   if (pathname === "/login") return "login";
@@ -144,6 +183,12 @@ function App() {
   const [deviceForm, setDeviceForm] = useState(DEVICE_FORM_DEFAULT);
   const [cloudForm, setCloudForm] = useState(CLOUD_FORM_DEFAULT);
   const [cloudLoginUrlInput, setCloudLoginUrlInput] = useState(CLOUD_URL_FALLBACK);
+
+  function scheduleAutofillRecovery(task) {
+    saveAutofillRecoveryTask(task);
+    showToast("自动填充插件刚刚更新，页面正在刷新并自动重试。");
+    window.setTimeout(() => window.location.reload(), 160);
+  }
 
   useEffect(() => {
     checkSession();
@@ -190,6 +235,7 @@ function App() {
   useEffect(() => {
     if (!authReady) return;
     if (!authenticated) {
+      clearAutofillRecoveryTask();
       if (tab !== "login") {
         window.history.replaceState({}, "", "/login");
         setTab("login");
@@ -203,6 +249,32 @@ function App() {
     }
     loadData();
   }, [authReady, authenticated, tab]);
+
+  useEffect(() => {
+    if (!authenticated || loading) return;
+    const task = readAutofillRecoveryTask();
+    if (!task) return;
+    clearAutofillRecoveryTask();
+
+    if (task.kind === "device") {
+      const device = boot.devices.find((item) => item.id === task.id);
+      if (device) {
+        window.setTimeout(() => {
+          openDeviceWithRecovery(device, { recoveryAttempt: Number(task.recoveryAttempt || 0) });
+        }, 220);
+      }
+      return;
+    }
+
+    if (task.kind === "cloud") {
+      const item = boot.cloudLogins.find((entry) => entry.id === task.id);
+      if (item) {
+        window.setTimeout(() => {
+          openCloudWithRecovery(item, { recoveryAttempt: Number(task.recoveryAttempt || 0) });
+        }, 220);
+      }
+    }
+  }, [authenticated, loading, boot.devices, boot.cloudLogins, boot.settings.cloudLoginUrl]);
 
   async function api(path, options = {}) {
     const response = await fetch(path, {
@@ -435,7 +507,7 @@ function App() {
         window.clearTimeout(timer);
         window.removeEventListener("message", handleAck);
         if (data.error) {
-          reject(new Error(data.error));
+          reject(new Error(normalizeAutofillErrorMessage(data.error)));
           return;
         }
         resolve();
@@ -454,7 +526,8 @@ function App() {
     });
   }
 
-  async function openDevice(device) {
+  async function openDevice(device, options = {}) {
+    const recoveryAttempt = Number(options.recoveryAttempt || 0);
     try {
       const secret = await fetchDeviceSecret(device.id);
       await sendAutofillContext({
@@ -496,6 +569,57 @@ function App() {
       // 插件未安装时仍允许直接打开平台，但不会自动填充。
     }
     window.open(cloudLoginUrl, "_blank", "noopener,noreferrer");
+  }
+
+  async function openDeviceWithRecovery(device, options = {}) {
+    const recoveryAttempt = Number(options.recoveryAttempt || 0);
+    const autofillToken = createAutofillToken();
+    try {
+      const secret = await fetchDeviceSecret(device.id);
+      await sendAutofillContext({
+        kind: "device",
+        autofillToken,
+        targetUrl: device.url,
+        username: secret.username || "",
+        password: secret.password || "",
+        sourceLabel: device.name || "设备登录",
+      });
+    } catch (error) {
+      const message = normalizeAutofillErrorMessage(error.message);
+      if (isAutofillContextInvalidated(message) && recoveryAttempt < 1) {
+        scheduleAutofillRecovery({ kind: "device", id: device.id, recoveryAttempt: recoveryAttempt + 1 });
+        return;
+      }
+      showToast(`${message}，已直接打开页面`);
+    }
+    window.open(device.url, autofillToken);
+  }
+
+  async function openCloudWithRecovery(item, options = {}) {
+    const recoveryAttempt = Number(options.recoveryAttempt || 0);
+    const autofillToken = createAutofillToken();
+    try {
+      const secret = await fetchCloudSecret(item.id);
+      await sendAutofillContext({
+        kind: "cloud",
+        autofillToken,
+        targetUrl: cloudLoginUrl,
+        tenantName: secret.tenantName || item.tenantName || "",
+        tenantCode: secret.tenantCode || item.tenantCode || "",
+        platformAccount: secret.platformAccount || item.platformAccount || "",
+        jumpUsername: secret.platformAccount || item.platformAccount || "",
+        jumpPassword: secret.jumpPassword || "",
+        sourceLabel: secret.tenantName || secret.tenantCode || item.platformAccount || "云平台",
+      });
+    } catch (error) {
+      const message = normalizeAutofillErrorMessage(error.message);
+      if (isAutofillContextInvalidated(message) && recoveryAttempt < 1) {
+        scheduleAutofillRecovery({ kind: "cloud", id: item.id, recoveryAttempt: recoveryAttempt + 1 });
+        return;
+      }
+      showToast(`${message}，已直接打开页面`);
+    }
+    window.open(cloudLoginUrl, autofillToken);
   }
 
   function openCreateDialog(type) {
@@ -855,6 +979,12 @@ function App() {
               </div>
               <div className="mt-3 space-y-2">
                 <SidebarResourceLink
+                  href={PLUGIN_ZIP_URL}
+                  title="下载插件 ZIP"
+                  desc="下载后解压，可直接在 Chrome 导入插件目录"
+                  download
+                />
+                <SidebarResourceLink
                   href={PLUGIN_GUIDE_URL}
                   title="插件说明"
                   desc="查看安装步骤和云平台自动填充说明"
@@ -1062,7 +1192,7 @@ function App() {
                               pinned
                               status={deviceStatus[device.id] || "idle"}
                               onCopy={copyText}
-                              onOpen={openDevice}
+                              onOpen={openDeviceWithRecovery}
                               onEdit={openEditDevice}
                               onDelete={deleteDevice}
                               onPin={togglePin}
@@ -1081,7 +1211,7 @@ function App() {
                             device={device}
                             status={deviceStatus[device.id] || "idle"}
                             onCopy={copyText}
-                            onOpen={openDevice}
+                            onOpen={openDeviceWithRecovery}
                             onEdit={openEditDevice}
                             onDelete={deleteDevice}
                             onPin={togglePin}
@@ -1097,7 +1227,7 @@ function App() {
                   <DeviceTable
                     devices={[...(devicePage === 1 ? pinnedDevices : []), ...pagedDevices]}
                     deviceStatus={deviceStatus}
-                    onOpen={openDevice}
+                    onOpen={openDeviceWithRecovery}
                     onTest={testDevice}
                     onEdit={openEditDevice}
                     onPin={togglePin}
@@ -1120,7 +1250,7 @@ function App() {
                             pinned
                             cloudLoginUrl={cloudLoginUrl}
                             onCopy={copyText}
-                            onOpen={openCloud}
+                            onOpen={openCloudWithRecovery}
                             onEdit={openEditCloud}
                             onDelete={deleteCloud}
                             onPin={toggleCloudPin}
@@ -1138,7 +1268,7 @@ function App() {
                           item={item}
                           cloudLoginUrl={cloudLoginUrl}
                           onCopy={copyText}
-                          onOpen={openCloud}
+                          onOpen={openCloudWithRecovery}
                           onEdit={openEditCloud}
                           onDelete={deleteCloud}
                           onPin={toggleCloudPin}
@@ -1387,12 +1517,13 @@ function SidebarMenuItem({ active, icon: Icon, title, onClick }) {
   );
 }
 
-function SidebarResourceLink({ href, title, desc }) {
+function SidebarResourceLink({ href, title, desc, download = false }) {
   return (
     <a
       href={href}
-      target="_blank"
+      target={download ? undefined : "_blank"}
       rel="noreferrer"
+      download={download ? "" : undefined}
       className="block rounded-2xl border border-slate-200 bg-white px-4 py-3 transition hover:bg-slate-50 dark:border-white/7 dark:bg-white/[0.03] dark:hover:bg-white/[0.06]"
     >
       <div className="text-sm font-medium text-slate-700 dark:text-zinc-200">{title}</div>

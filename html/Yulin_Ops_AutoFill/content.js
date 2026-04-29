@@ -47,6 +47,7 @@ const PASSWORD_SELECTORS = [
 ];
 
 let panelMessageListenerInstalled = false;
+const PANEL_ROUTE_RE = /:\/\/(127\.0\.0\.1|localhost)(:\d+)?\/(drives|cloud|login|plugin-lab)\b/i;
 
 function isCloudPage(url) {
   return /auth\.ylaky\.com|oc\.ylaky\.com/i.test(url);
@@ -57,11 +58,30 @@ function isPlatformEntryPage(url) {
 }
 
 function isPanelPage() {
-  return Boolean(document.querySelector('[data-panel-app="firewall-login-manager"]'));
+  if (document.querySelector('[data-panel-app="firewall-login-manager"]')) {
+    return true;
+  }
+  return PANEL_ROUTE_RE.test(currentUrl);
 }
 
 function hasStorageApi() {
   return typeof chrome !== "undefined" && chrome.storage && chrome.storage.local;
+}
+
+function isContextInvalidatedError(error) {
+  return String(error?.message || error || "").includes("Extension context invalidated");
+}
+
+function postAutofillAck(requestId, errorMessage = "") {
+  window.postMessage(
+    {
+      source: "yulin-ops-autofill",
+      type: AUTOFILL_CONTEXT_ACK_TYPE,
+      requestId,
+      ...(errorMessage ? { error: errorMessage } : {}),
+    },
+    "*"
+  );
 }
 
 function safeParseUrl(rawUrl) {
@@ -81,6 +101,7 @@ function normalizeContext(payload) {
   return {
     kind: payload.kind || "device",
     targetUrl: String(payload.targetUrl || "").trim(),
+    autofillToken: String(payload.autofillToken || "").trim(),
     tenantName: String(payload.tenantName || "").trim(),
     tenantCode: String(payload.tenantCode || "").trim(),
     platformAccount: String(payload.platformAccount || "").trim(),
@@ -105,8 +126,15 @@ async function saveAutofillContext(context) {
 async function loadAutofillContext() {
   let context = null;
   if (hasStorageApi()) {
-    const result = await chrome.storage.local.get(AUTOFILL_CONTEXT_KEY);
-    context = result?.[AUTOFILL_CONTEXT_KEY] || null;
+    try {
+      const result = await chrome.storage.local.get(AUTOFILL_CONTEXT_KEY);
+      context = result?.[AUTOFILL_CONTEXT_KEY] || null;
+    } catch (error) {
+      if (!isContextInvalidatedError(error)) {
+        throw error;
+      }
+      context = null;
+    }
   } else {
     const raw = sessionStorage.getItem(AUTOFILL_CONTEXT_KEY);
     context = raw ? JSON.parse(raw) : null;
@@ -122,7 +150,13 @@ async function loadAutofillContext() {
 
 async function clearAutofillContext() {
   if (hasStorageApi()) {
-    await chrome.storage.local.remove(AUTOFILL_CONTEXT_KEY);
+    try {
+      await chrome.storage.local.remove(AUTOFILL_CONTEXT_KEY);
+    } catch (error) {
+      if (!isContextInvalidatedError(error)) {
+        throw error;
+      }
+    }
     return;
   }
   sessionStorage.removeItem(AUTOFILL_CONTEXT_KEY);
@@ -141,9 +175,18 @@ function contextMatchesCurrentUrl(context) {
   return current.hostname === target.hostname;
 }
 
+function contextMatchesWindowName(context) {
+  if (!context?.autofillToken) return true;
+  return window.name === context.autofillToken;
+}
+
 function pickVisibleInput(selectorText) {
   const elements = Array.from(document.querySelectorAll(selectorText));
   return elements.find((element) => element.offsetWidth > 0 && element.offsetHeight > 0) || elements[0] || null;
+}
+
+function getObserverRoot() {
+  return document.documentElement || document;
 }
 
 function pickField(selectors) {
@@ -166,10 +209,8 @@ function setFieldValue(field, value) {
   if (field._valueTracker && typeof field._valueTracker.setValue === "function") {
     field._valueTracker.setValue("");
   }
-  field.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Enter" }));
   field.dispatchEvent(new InputEvent("input", { bubbles: true, data: value, inputType: "insertText" }));
   field.dispatchEvent(new Event("change", { bubbles: true }));
-  field.dispatchEvent(new KeyboardEvent("keyup", { bubbles: true, key: "Enter" }));
   field.dispatchEvent(new Event("blur", { bubbles: true }));
   return field.value === value || field.getAttribute("value") === value;
 }
@@ -203,7 +244,7 @@ function fillCredentialFields(plan) {
   const usernameValue = plan.username || "";
   const passwordValue = plan.password || "";
 
-  if (tenantValue) {
+  if (tenantValue && tenantField) {
     expected.push("租户ID");
     if (setFieldValue(tenantField, tenantValue)) {
       filled.push("租户ID");
@@ -214,7 +255,7 @@ function fillCredentialFields(plan) {
 
   if (usernameValue) {
     expected.push("账号");
-    if (setFieldValue(userField, usernameValue)) {
+    if (userField && setFieldValue(userField, usernameValue)) {
       filled.push("账号");
     } else {
       missing.push("账号");
@@ -223,7 +264,7 @@ function fillCredentialFields(plan) {
 
   if (passwordValue) {
     expected.push("密码");
-    if (setFieldValue(passwordField, passwordValue)) {
+    if (passwordField && setFieldValue(passwordField, passwordValue)) {
       filled.push("密码");
     } else {
       missing.push("密码");
@@ -257,7 +298,6 @@ function scheduleFill(plan, options = {}) {
   const finish = async () => {
     if (finished) return;
     finished = true;
-    observer.disconnect();
     if (!clearOnSuccess) {
       return;
     }
@@ -284,20 +324,6 @@ function scheduleFill(plan, options = {}) {
       attemptFill(round + 1);
     }, delay);
   };
-
-  const observer = new MutationObserver(() => {
-    if (finished) return;
-    if (fillCredentialFields(plan)) {
-      finish();
-    }
-  });
-
-  observer.observe(document.documentElement, {
-    childList: true,
-    subtree: true,
-    attributes: true,
-    attributeFilter: ["class", "style", "type", "value", "placeholder"],
-  });
 
   attemptFill();
 }
@@ -347,44 +373,45 @@ function installPanelMessageListener() {
         } else {
           await saveAutofillContext(context);
         }
-        window.postMessage(
-          {
-            source: "yulin-ops-autofill",
-            type: AUTOFILL_CONTEXT_ACK_TYPE,
-            requestId: data.requestId,
-          },
-          "*"
-        );
+        postAutofillAck(data.requestId);
       })
       .catch((error) => {
-        console.error("[运维助手] 上下文写入失败", error);
-        window.postMessage(
-          {
-            source: "yulin-ops-autofill",
-            type: AUTOFILL_CONTEXT_ACK_TYPE,
-            requestId: data.requestId,
-            error: String(error?.message || error),
-          },
-          "*"
-        );
+        const message = String(error?.message || error || "");
+        if (!isContextInvalidatedError(error)) {
+          console.warn("[运维助手] 上下文写入异常", error);
+        }
+        postAutofillAck(data.requestId, message);
       });
   });
 }
 
 if (isPanelPage()) {
   installPanelMessageListener();
-} else {
-  const observer = new MutationObserver(() => {
-    if (!isPanelPage()) return;
-    installPanelMessageListener();
-    observer.disconnect();
+} else if (PANEL_ROUTE_RE.test(currentUrl)) {
+  window.addEventListener("DOMContentLoaded", () => {
+    if (isPanelPage()) {
+      installPanelMessageListener();
+    }
   });
-  observer.observe(document.documentElement, { childList: true, subtree: true });
+  window.setTimeout(() => {
+    if (isPanelPage()) {
+      installPanelMessageListener();
+    }
+  }, 250);
+  window.setTimeout(() => {
+    if (isPanelPage()) {
+      installPanelMessageListener();
+    }
+  }, 1200);
 }
 
 (async () => {
   const activeContext = await loadAutofillContext();
   if (!activeContext || activeContext.kind === "reset") {
+    return;
+  }
+
+  if (!contextMatchesWindowName(activeContext)) {
     return;
   }
 

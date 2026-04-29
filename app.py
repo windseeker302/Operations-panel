@@ -2,11 +2,13 @@ import csv
 import base64
 import hashlib
 import hmac
+import io
 import json
 import os
 import secrets
 import sqlite3
 import time
+import zipfile
 from datetime import datetime
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -18,6 +20,7 @@ from cryptography.fernet import Fernet, InvalidToken
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = Path(os.environ.get("APP_STATIC_DIR", BASE_DIR / "html")).resolve()
+PLUGIN_DIR = (STATIC_DIR / "Yulin_Ops_AutoFill").resolve()
 RUNTIME_DIR = Path(os.environ.get("APP_RUNTIME_DIR", BASE_DIR / "runtime")).resolve()
 DB_PATH = Path(os.environ.get("APP_DB_PATH", RUNTIME_DIR / "firewall-login-manager.db")).resolve()
 SEED_FILE = Path(os.environ.get("APP_SEED_FILE", BASE_DIR / "seed" / "default_devices.json")).resolve()
@@ -40,6 +43,13 @@ AUTH_USERNAME = os.environ.get("APP_AUTH_USERNAME", "admin")
 AUTH_PASSWORD = os.environ.get("APP_AUTH_PASSWORD", "admin123456")
 SESSION_COOKIE_NAME = "ops_panel_session"
 SESSION_MAX_AGE = int(os.environ.get("APP_SESSION_MAX_AGE", "43200"))
+PLUGIN_LAB_RESULT: dict[str, str] = {
+    "status": "idle",
+    "tenant": "",
+    "username": "",
+    "password": "",
+    "updatedAt": "",
+}
 CLOUD_CARD_PASSWORD_LABEL = "密码"
 CLOUD_ACCOUNT_LABELS = {
     "HLW_danganguan_admin": "互联网榆林市档案馆",
@@ -120,6 +130,162 @@ CLOUD_ACCOUNT_LABELS = {
 
 def now_iso() -> str:
     return datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+
+
+def build_plugin_zip_bytes() -> bytes:
+    if not PLUGIN_DIR.exists() or not PLUGIN_DIR.is_dir():
+        raise FileNotFoundError("插件目录不存在")
+
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for file_path in sorted(PLUGIN_DIR.rglob("*")):
+            if not file_path.is_file():
+                continue
+            archive.write(file_path, arcname=file_path.relative_to(STATIC_DIR).as_posix())
+    return buffer.getvalue()
+
+
+def build_plugin_lab_source_html(base_url: str) -> str:
+    target_url = f"{base_url}/plugin-lab-target"
+    report_url = f"{base_url}/api/plugin-lab-result"
+    return f"""<!doctype html>
+<html lang="zh-CN" data-panel-app="firewall-login-manager">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>插件自测入口</title>
+    <style>
+      body {{ font-family: 'Microsoft YaHei', sans-serif; background: #111827; color: #e5e7eb; margin: 0; padding: 32px; }}
+      .card {{ max-width: 760px; margin: 0 auto; border-radius: 20px; background: #1f2937; padding: 24px; box-shadow: 0 20px 50px rgba(0,0,0,.35); }}
+      h1 {{ margin: 0 0 12px; font-size: 28px; }}
+      p {{ color: #9ca3af; line-height: 1.7; }}
+      code {{ background: rgba(255,255,255,.08); padding: 2px 6px; border-radius: 8px; }}
+      .ok {{ color: #86efac; }}
+      .err {{ color: #fca5a5; }}
+      .mono {{ font-family: Consolas, monospace; }}
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>插件自测入口</h1>
+      <p id="status">正在写入自动填充上下文并打开目标页...</p>
+      <p class="mono">目标页：<code>{target_url}</code></p>
+      <p class="mono">账号：<code>plugin_lab_account</code></p>
+      <p class="mono">密码：<code>Pass@2026!!11</code></p>
+    </div>
+    <script>
+      const ACK = "YL_OPS_AUTOFILL_CONTEXT_STORED";
+      const MSG = "YL_OPS_AUTOFILL_CONTEXT";
+      const requestId = "plugin-lab-" + Date.now();
+      const targetUrl = {json.dumps(target_url)};
+      const payload = {{
+        kind: "cloud",
+        targetUrl,
+        tenantName: "plugin-lab-tenant",
+        tenantCode: "plugin-lab-tenant",
+        platformAccount: "plugin_lab_account",
+        jumpUsername: "plugin_lab_account",
+        jumpPassword: "Pass@2026!!11",
+        sourceLabel: "插件自测"
+      }};
+      const statusNode = document.getElementById("status");
+      let stopped = false;
+      let attempts = 0;
+      const timer = window.setTimeout(() => {{
+        stopped = true;
+        statusNode.textContent = "插件没有响应，说明当前页面没挂上内容脚本。";
+        statusNode.className = "err";
+      }}, 5000);
+      window.addEventListener("message", (event) => {{
+        const data = event.data;
+        if (event.source !== window || !data || data.type !== ACK || data.requestId !== requestId) return;
+        window.clearTimeout(timer);
+        stopped = true;
+        if (data.error) {{
+          statusNode.textContent = "插件响应报错：" + data.error;
+          statusNode.className = "err";
+          return;
+        }}
+        statusNode.textContent = "插件已收到上下文，正在跳转目标页...";
+        statusNode.className = "ok";
+        fetch({json.dumps(report_url)}, {{
+          method: "POST",
+          headers: {{ "Content-Type": "application/json" }},
+          body: JSON.stringify({{ status: "ack" }})
+        }}).finally(() => {{
+          window.location.href = targetUrl;
+        }});
+      }});
+      const sendProbe = () => {{
+        if (stopped) return;
+        attempts += 1;
+        window.postMessage({{
+          source: "firewall-login-manager",
+          type: MSG,
+          requestId,
+          payload
+        }}, "*");
+        if (attempts < 16) {{
+          window.setTimeout(sendProbe, 300);
+        }}
+      }};
+      sendProbe();
+    </script>
+  </body>
+</html>"""
+
+
+def build_plugin_lab_target_html(base_url: str) -> str:
+    report_url = f"{base_url}/api/plugin-lab-result"
+    return f"""<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>插件自测目标页</title>
+    <style>
+      body {{ font-family: 'Microsoft YaHei', sans-serif; background: #f8fafc; color: #0f172a; margin: 0; padding: 32px; }}
+      .card {{ max-width: 760px; margin: 0 auto; border-radius: 20px; background: white; padding: 24px; box-shadow: 0 20px 50px rgba(15,23,42,.08); }}
+      .row {{ display: grid; gap: 8px; margin-top: 16px; }}
+      input {{ height: 44px; border-radius: 12px; border: 1px solid #cbd5e1; padding: 0 14px; font-size: 15px; }}
+      .muted {{ color: #64748b; }}
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>插件自测目标页</h1>
+      <p class="muted">这个页面会在 4 秒后把真实输入框值回传给本地服务。</p>
+      <div class="row">
+        <label>租户</label>
+        <input type="text" id="tenant-field" name="tenantCode" placeholder="租户ID">
+      </div>
+      <div class="row">
+        <label>用户名</label>
+        <input type="text" id="ti_auto_id_1" class="inputWidth" tiny3version="12.3.141-beta.1" placeholder="用户名" data-ddg-inputtype="identities.firstName">
+      </div>
+      <div class="row">
+        <label>密码</label>
+        <input type="password" id="ti_auto_id_2" class="inputWidth ti3-text-input-show-icon" tiny3version="12.3.141-beta.1" placeholder="密码" data-ddg-inputtype="credentials.password.current" autocomplete="current-password">
+      </div>
+    </div>
+    <script>
+      window.setTimeout(async () => {{
+        const payload = {{
+          status: "reported",
+          tenant: document.getElementById("tenant-field").value || "",
+          username: document.getElementById("ti_auto_id_1").value || "",
+          password: document.getElementById("ti_auto_id_2").value || ""
+        }};
+        await fetch({json.dumps(report_url)}, {{
+          method: "POST",
+          headers: {{ "Content-Type": "application/json" }},
+          body: JSON.stringify(payload)
+        }});
+        document.body.insertAdjacentHTML("beforeend", "<p class='muted'>已上报结果，可回到终端查看。</p>");
+      }}, 4000);
+    </script>
+  </body>
+</html>"""
 
 
 def get_connection() -> sqlite3.Connection:
@@ -616,7 +782,12 @@ class AppHandler(SimpleHTTPRequestHandler):
         return read_session_token(token)
 
     def is_public_api(self, path: str) -> bool:
-        return path in {"/api/healthz", "/api/auth/session", "/api/auth/login"}
+        return path in {
+            "/api/healthz",
+            "/api/auth/session",
+            "/api/auth/login",
+            "/api/plugin-lab-result",
+        }
 
     def require_api_auth(self, path: str) -> bool:
         if self.is_public_api(path):
@@ -646,6 +817,26 @@ class AppHandler(SimpleHTTPRequestHandler):
             self.send_response(HTTPStatus.FOUND)
             self.send_header("Location", "/drives" if self.current_user() else "/login")
             self.end_headers()
+            return
+
+        if parsed.path == "/plugin-lab":
+            base_url = f"http://{self.headers.get('Host') or '127.0.0.1:8080'}"
+            content = build_plugin_lab_source_html(base_url).encode("utf-8")
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(content)))
+            self.end_headers()
+            self.wfile.write(content)
+            return
+
+        if parsed.path == "/plugin-lab-target":
+            base_url = f"http://{self.headers.get('Host') or '127.0.0.1:8080'}"
+            content = build_plugin_lab_target_html(base_url).encode("utf-8")
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(content)))
+            self.end_headers()
+            self.wfile.write(content)
             return
 
         if parsed.path.startswith("/api/"):
@@ -723,6 +914,23 @@ class AppHandler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def send_bytes(
+        self,
+        payload: bytes,
+        content_type: str,
+        status: int = 200,
+        headers: dict | None = None,
+    ) -> None:
+        self.send_response(status)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", str(len(payload)))
+        if headers:
+            for key, value in headers.items():
+                self.send_header(key, value)
+        self.end_headers()
+        self.wfile.write(payload)
+
     def send_empty(self, status: int = 204) -> None:
         self.send_response(status)
         self.end_headers()
@@ -734,6 +942,9 @@ class AppHandler(SimpleHTTPRequestHandler):
         parsed = urlparse(self.path)
         if parsed.path == "/api/healthz":
             self.send_json({"status": "ok", "time": now_iso()})
+            return
+        if parsed.path == "/api/plugin-lab-result":
+            self.send_json(PLUGIN_LAB_RESULT)
             return
         if parsed.path == "/api/auth/session":
             user = self.current_user()
@@ -787,11 +998,36 @@ class AppHandler(SimpleHTTPRequestHandler):
                 )
                 return
 
+            if parsed.path == "/api/resources/chrome-plugin.zip":
+                try:
+                    plugin_zip = build_plugin_zip_bytes()
+                except FileNotFoundError:
+                    self.send_api_error("插件目录不存在", status=404)
+                    return
+                self.send_bytes(
+                    plugin_zip,
+                    "application/zip",
+                    headers={"Content-Disposition": 'attachment; filename="Yulin_Ops_AutoFill.zip"'},
+                )
+                return
+
         self.send_api_error("未找到接口", status=404)
 
     def handle_api_post(self) -> None:
         parsed = urlparse(self.path)
         body = self.parse_json_body()
+        if parsed.path == "/api/plugin-lab-result":
+            PLUGIN_LAB_RESULT.update(
+                {
+                    "status": str(body.get("status", "")).strip() or "reported",
+                    "tenant": str(body.get("tenant", "")).strip(),
+                    "username": str(body.get("username", "")).strip(),
+                    "password": str(body.get("password", "")).strip(),
+                    "updatedAt": now_iso(),
+                }
+            )
+            self.send_json({"ok": True, "result": PLUGIN_LAB_RESULT})
+            return
         if parsed.path == "/api/auth/login":
             username = str(body.get("username", "")).strip()
             password = str(body.get("password", "")).strip()
