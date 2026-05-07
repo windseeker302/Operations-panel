@@ -47,7 +47,7 @@ const PASSWORD_SELECTORS = [
 ];
 
 let panelMessageListenerInstalled = false;
-const PANEL_ROUTE_RE = /:\/\/(127\.0\.0\.1|localhost)(:\d+)?\/(drives|cloud|login|plugin-lab)\b/i;
+const PANEL_ROUTE_RE = /\/(drives|cloud|login|plugin-lab)\b/i;
 
 function isCloudPage(url) {
   return /auth\.ylaky\.com|oc\.ylaky\.com/i.test(url);
